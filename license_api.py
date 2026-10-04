@@ -11,6 +11,7 @@ import re
 import secrets
 import string
 import urllib.request
+import urllib.error
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -87,8 +88,12 @@ def paydunya_request(path, payload):
         raise RuntimeError("Les trois clés PayDunya ne sont pas configurées dans Render.")
     encoded = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(paydunya_url(path), data=encoded, headers=paydunya_headers(), method="POST")
-    with urllib.request.urlopen(req, timeout=25) as response:
-        return json.loads(response.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(req, timeout=45) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as error:
+        details = error.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"PayDunya HTTP {error.code}: {details}") from error
 
 
 def new_license_key():
