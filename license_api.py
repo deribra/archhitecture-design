@@ -13,6 +13,7 @@ import string
 import urllib.request
 import urllib.error
 import uuid
+import hmac
 from datetime import datetime, timedelta, timezone
 
 import psycopg
@@ -141,6 +142,43 @@ def validate_license():
     active, expires_at = row["active"], row["expires_at"]
     valid = bool(active) and expires_at > datetime.now(timezone.utc)
     return jsonify({"valid": valid, "message": "Licence valide." if valid else "Licence expirée ou inactive.", "expires_at": expires_at.isoformat()})
+
+
+@app.post("/api/admin/create-wave-license")
+def create_wave_license():
+    """Create a licence manually after the administrator confirms a Wave payment."""
+    error = ensure_database_or_error()
+    if error:
+        return jsonify({"error": error}), 503
+    configured_secret = os.environ.get("WAVE_ADMIN_SECRET", "").strip()
+    provided_secret = request.headers.get("X-Admin-Secret", "").strip()
+    if not configured_secret or not hmac.compare_digest(provided_secret, configured_secret):
+        return jsonify({"error": "Accès administrateur refusé."}), 401
+
+    body = request.get_json(silent=True) or {}
+    plan = str(body.get("plan", "")).lower()
+    customer = body.get("customer") or {}
+    if plan not in PLANS:
+        return jsonify({"error": "plan doit être month ou year"}), 400
+    if not customer.get("name"):
+        return jsonify({"error": "Le nom du client est obligatoire."}), 400
+
+    reference = f"WAVE-MANUAL-{uuid.uuid4().hex[:12].upper()}"
+    license_key = new_license_key()
+    config = PLANS[plan]
+    expires_at = datetime.now(timezone.utc) + timedelta(days=config["days"])
+    with db() as con:
+        con.execute(
+            """INSERT INTO payments(reference,plan,amount,customer_name,customer_email,customer_phone,status)
+               VALUES(%s,%s,%s,%s,%s,%s,'completed')""",
+            (reference, plan, config["amount"], customer["name"], customer.get("email", ""), customer.get("phone", "")),
+        )
+        con.execute(
+            """INSERT INTO licenses(license_key,plan,payment_reference,customer_name,customer_email,expires_at)
+               VALUES(%s,%s,%s,%s,%s,%s)""",
+            (license_key, plan, reference, customer["name"], customer.get("email", ""), expires_at),
+        )
+    return jsonify({"created": True, "license": license_key, "reference": reference, "expires_at": expires_at.isoformat()})
 
 
 @app.post("/api/create-payment")
