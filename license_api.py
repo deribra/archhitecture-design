@@ -1,3 +1,41 @@
+license_api.py ne semble pas etre  à jour
+vérifier
+Le fichier local est bien à jour. Il contient notamment :
+
+import psycopg
+"User-Agent": "Mozilla/5.0 ..."
+@app.post("/api/create-payment")
+La date de modification :
+
+04/10/2026 07:39
+confirme qu’il a été modifié.
+
+Vérifier dans VSCode
+Ouvrez :
+
+C:\Users\DERIB\Documents\Projet par défaut\license_api.py
+Utilisez :
+
+Ctrl + F
+Recherchez :
+
+User-Agent
+Vous devez trouver cette ligne :
+
+"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36 K3D-Senegal/1.0",
+Important
+Le fichier local est différent du fichier dans GitHub et du fichier utilisé par Render.
+
+Vous devez encore :
+
+Ouvrir license_api.py dans GitHub.
+Cliquer sur le crayon Edit.
+Remplacer tout le contenu par le contenu du fichier local.
+Cliquer sur Commit changes.
+Dans Render :
+Deploys → Manual Deploy → Deploy latest commit
+Vérifiez que le dernier déploiement Render utilise le nouveau commit GitHub. Le fichier local peut être à jour alors que Render utilise encore l’ancienne version.
+
 """K3D Sénégal - API de licences et de paiement PayDunya.
 
 Les clés PayDunya et DATABASE_URL sont uniquement des variables Render.
@@ -71,6 +109,10 @@ def init_database():
 def paydunya_headers():
     return {
         "Content-Type": "application/json",
+        "Accept": "application/json",
+        # PayDunya est protégé par Cloudflare ; sans User-Agent, la requête
+        # Python urllib peut être refusée avec l'erreur 403 / 1010.
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36 K3D-Senegal/1.0",
         "PAYDUNYA-MASTER-KEY": os.environ.get("PAYDUNYA_MASTER_KEY", ""),
         "PAYDUNYA-PRIVATE-KEY": os.environ.get("PAYDUNYA_PRIVATE_KEY", ""),
         "PAYDUNYA-TOKEN": os.environ.get("PAYDUNYA_TOKEN", ""),
