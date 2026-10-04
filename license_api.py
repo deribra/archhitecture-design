@@ -75,9 +75,9 @@ def paydunya_headers():
         # PayDunya est protégé par Cloudflare ; sans User-Agent, la requête
         # Python urllib peut être refusée avec l'erreur 403 / 1010.
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36 K3D-Senegal/1.0",
-        "PAYDUNYA-MASTER-KEY": os.environ.get("PAYDUNYA_MASTER_KEY", ""),
-        "PAYDUNYA-PRIVATE-KEY": os.environ.get("PAYDUNYA_PRIVATE_KEY", ""),
-        "PAYDUNYA-TOKEN": os.environ.get("PAYDUNYA_TOKEN", ""),
+        "PAYDUNYA-MASTER-KEY": os.environ.get("PAYDUNYA_MASTER_KEY", "").strip(),
+        "PAYDUNYA-PRIVATE-KEY": os.environ.get("PAYDUNYA_PRIVATE_KEY", "").strip(),
+        "PAYDUNYA-TOKEN": os.environ.get("PAYDUNYA_TOKEN", "").strip(),
     }
 
 
@@ -167,7 +167,6 @@ def create_payment():
             "total_amount": config["amount"],
             "description": config["label"],
             "customer": {"name": customer["name"], "email": customer["email"], "phone": customer.get("phone", "")},
-            "channels": ["card", "wave-senegal", "orange-money-senegal"],
         },
         "store": {"name": "K3D Sénégal", "website_url": "https://k3dsn.com"},
         "custom_data": {"reference": reference, "plan": plan},
