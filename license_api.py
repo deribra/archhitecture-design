@@ -136,12 +136,17 @@ def validate_license():
     if not LICENSE_PATTERN.fullmatch(key):
         return jsonify({"valid": False, "message": "Format de licence invalide."}), 400
     with db() as con:
-        row = con.execute("SELECT active,expires_at FROM licenses WHERE license_key=%s", (key,)).fetchone()
+        row = con.execute("SELECT active,expires_at,customer_name FROM licenses WHERE license_key=%s", (key,)).fetchone()
     if not row:
         return jsonify({"valid": False, "message": "Licence inconnue."}), 401
     active, expires_at = row["active"], row["expires_at"]
     valid = bool(active) and expires_at > datetime.now(timezone.utc)
-    return jsonify({"valid": valid, "message": "Licence valide." if valid else "Licence expirée ou inactive.", "expires_at": expires_at.isoformat()})
+    return jsonify({
+        "valid": valid,
+        "message": "Licence valide." if valid else "Licence expirée ou inactive.",
+        "expires_at": expires_at.isoformat(),
+        "customer_name": row["customer_name"] or "",
+    })
 
 
 @app.post("/api/admin/create-wave-license")
